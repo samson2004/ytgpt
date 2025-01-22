@@ -39,7 +39,7 @@ const SignPage = () => {
           if(success.status==400) {
             setbuttonvariant(true);
             setsignupbuttonloader(false);
-            window.location.href='/';
+            window.location.href='/home';
             return ;
 
           }else if(success.status==201){
@@ -79,7 +79,7 @@ const SignPage = () => {
           if(success){
             setbuttonvariant(true);
             setsignupbuttonloader(false);
-            window.location.href='/'
+            window.location.href='/home'
           }
         } catch (error) {
           alert('please.Trying again later...');
