@@ -1,101 +1,83 @@
 'use client';
+import { permanentRedirect } from 'next/navigation';
 import { getUserbyId } from '@/lib/actions/user.actions';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Youtube,Search,Copy,ClipboardPaste } from "lucide-react";
 import { Input } from '@/components/ui/input';
-import axios from 'axios';
-import Resultpage from '@/components/shared/resultpage';
+import Loadingpage from '@/components/shared/loading';
+import {createVideocontententry} from '@/lib/actions/videocontent.actions';
 const homePage = () => {
     const [cookieValue, setCookieValue] = useState(null);
     const [userdata, setUserdata] = useState(null); // Start with null to differentiate from empty objects
     const [contentcreated,setcontentcreated]=useState(false);
-    const [apiresult,setapiresult]=useState({
-        "id": "cmpl-xxxxxxxxxxxx",
-        "object": "chat.completion",
-        "created": 1677888100,
-        "model": "gpt-4",
-        "choices": [
-          {
-            "message": {
-              "role": "assistant",
-              "content": "### Key Points from 'The Basics of Quantum Mechanics'\n\n#### 1. Introduction to Quantum Mechanics\n- Quantum mechanics is the study of particles at the atomic and subatomic levels.\n- It explains phenomena that classical physics cannot, such as wave-particle duality.\n\n#### 2. Key Principles\n- **Wave-Particle Duality**: Particles, like electrons, exhibit properties of both waves and particles.\n- **Uncertainty Principle**: It is impossible to precisely measure both the position and momentum of a particle simultaneously.\n- **Quantum Superposition**: Particles can exist in multiple states at once until measured.\n\n#### 3. Applications of Quantum Mechanics\n- Modern electronics, such as semiconductors, rely on quantum principles.\n- Quantum computing is an emerging field utilizing quantum bits for processing.\n\n#### 4. Conclusion\n- Quantum mechanics provides a foundation for understanding the universe at microscopic scales.\n- While complex, its principles have paved the way for groundbreaking technologies."
-            },
-            "finish_reason": "stop",
-            "index": 0
-          }
-        ],
-        "usage": {
-          "prompt_tokens": 120,
-          "completion_tokens": 200,
-          "total_tokens": 320
-        }
-      }      
-    );
-    const [summarydata,setsummarydata]=useState({
-      title: '',
-      sections: [],
-    });
+    const [isloading,setisloading]=useState(false);
+    const [summarydata,setsummarydata]=useState();
     const [input,setinput]=useState("");
-    const [youtubeimageurl,setyoutubeimageurl]=useState("https://img.youtube.com/vi/Tg9yLrJTmTc/0.jpg");
+    const [youtubeimageurl,setyoutubeimageurl]=useState("");
 
-    const processApiResponse = (content) => {
-      const lines = content.split("\n");
-      // Extract the title (assumes the first line starts with "### Title:")
-      const titleLine = lines.find(line => line.startsWith("### Title:"));
-      const title = titleLine ? titleLine.replace("### Title:", "").trim() : "";
-      const sections = [];
-      let currentSubheading = null;
 
-      for (const line of lines) {
-        if (line.startsWith("####")) {
-          // It's a subheading
-          if (currentSubheading) {
-            sections.push(currentSubheading); // Save the previous subheading
-          }
-          currentSubheading = { subheading: line.replace("####", "").trim(), points: [] };
-        } else if (line.startsWith("-")) {
-          // It's a point, add it to the current subheading's points
-          if (currentSubheading) {
-            currentSubheading.points.push(line.replace("-", "").trim());
-          }
-        }
-      }
-
-      if (currentSubheading) {
-        sections.push(currentSubheading);
-      }
-
-  return { title, sections };
-    };
     const extractYouTubeId=(url)=> {
       const regex = url.split("=");
       return regex[1];
     }
     
-    const search=async()=>{
-        if(!input || input==""){
-          console.log("data:",input,"enter data");
-          return ;
-        }
-        const youtubeid=extractYouTubeId(input);
-        const youtubeurl=`https://img.youtube.com/vi/${youtubeid}/0.jpg`
-        console.log("youtubeimage-url:",youtubeurl);
-        setyoutubeimageurl(youtubeurl);
-        const response=await axios.post('/api/openaiapi/summarize',{summarizecontentinput:input});
-        setapiresult(response);
-        const message=response.data.choices[0];
-        const content=message.message.content;
-
-        const summary=processApiResponse(content);
-        console.log("summary",summary);
+    
+    const search = async () => {
+      if (!input || input === "") {
+          console.log("data:", input, "enter data");
+          return;
+      }
+      setisloading(true);
+      const youtubeid = extractYouTubeId(input);
+      const youtubeurl = `https://img.youtube.com/vi/${youtubeid}/0.jpg`;
+      console.log("youtubeimage-url:", youtubeurl);
+      setyoutubeimageurl(youtubeurl); 
+      try {
+        console.log('input:',input)
+          const response = await fetch("/api/gemini", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                 youtubeUrl: input,  // Use the 'input' variable directly here.
+              }),
+          });
+           if (!response.ok) {
+              const errorData = await response.json();
+              console.error("Error from /api/gemini:", errorData);
+              // Handle the error more explicitly (show error message to the user, etc.)
+              return;
+          }
+        console.log(response);
+        const summaryData = await response.json();
+        console.log("summary", summaryData);
+        const videoentry=await createVideocontententry(
+          {
+            data:summaryData,
+            youtubeimageurl:youtubeurl
+          }
+        );
         setsummarydata({
-          title: summary.title,
-          sections:summary.sections,
+             title: summaryData.title,
+            sections: summaryData.sections,
+            contentready:true
         });
         setcontentcreated(true);
+        console.log("videoentry:",videoentry);
+        
+      } catch (error) {
+          console.error("Error fetching from /api/gemini:", error);
       }
+  };
 
+  useEffect(()=>{
+    if(contentcreated==true){
+      setisloading(false);
+      permanentRedirect('/result');
+    }
+  },[contentcreated==true])
         
     useEffect(() => {
             const fetchdata = async () => {
@@ -129,8 +111,7 @@ const homePage = () => {
 
   return (
     <div>
-      {contentcreated==false &&
-        <section className={`bg-[#212121] w-screen h-screen items-center justify-center ${contentcreated?'hidden':'flex '}`}>
+        <section className={`bg-[#212121] w-screen h-screen items-center justify-center ${isloading ?'hidden':'flex '}`}>
         <div className='text-center'>
           <h1 className={`text-4xl text-gray-50 mb-10 font-semibold`}>VidBrief : Your Video Summary Tool</h1>
           {/* input bar */}
@@ -155,9 +136,8 @@ const homePage = () => {
             </div>
         </div>
       </section>
-      }
-      {contentcreated === true && summarydata && (
-      <Resultpage summarydata={summarydata} youtubeimageurl={youtubeimageurl} response={apiresult} />
+      {contentcreated === false && isloading==true && (
+        <Loadingpage isloading={isloading} />
 )}
     </div>
 
