@@ -30,6 +30,7 @@ export default function Home() {
           const user_data = await getUserbyId(value);          
           if (user_data && Object.keys(user_data).length > 0) {
             setUserdata(user_data); // Update state
+            permanentRedirect('/home')
           } else {
             permanentRedirect('/sign'); // Redirect if no valid data
           }

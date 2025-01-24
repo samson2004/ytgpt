@@ -1,5 +1,5 @@
 
-import { Calendar, Home, Inbox, Search, Settings,ChevronUp } from "lucide-react"
+import { Calendar, Home, Inbox, Search, Settings,ChevronUp,Plus } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,24 +24,9 @@ import { Button } from "../ui/button";
 export const  Appsidebar=({useremail,userid})=> {
   const items = [
     {
-      title: "Home",
-      url: "#",
-      icon: Home,
-    },
-    {
-      title: "Inbox",
-      url: "#",
-      icon: Inbox,
-    },
-    {
-      title: "Calendar",
-      url: "#",
-      icon: Calendar,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: Search,
+      title: "New Chat",
+      url: "/home",
+      icon: Plus,
     },
     {
       title: "Settings",
@@ -88,7 +73,7 @@ export const  Appsidebar=({useremail,userid})=> {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton>
-                    <h2 className="text-sm">{`@${username[0]}`}</h2>
+                    <h2 className="text-xs font-semibold">{`@${username[0]}`}</h2>
                     <ChevronUp className="ml-auto" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>

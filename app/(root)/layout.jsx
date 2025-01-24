@@ -49,8 +49,8 @@ const layout = ({children}) => {
     <SidebarProvider className='dark'>
         <section className='flex'>
           <Appsidebar useremail={Userdata?.email} userid={Userdata?._id} />
-              <main className='bg-[#2F2F2F] w-screen'>
-              <SidebarTrigger className='text-white' />
+              <main className='bg-[#212121]'>
+              <SidebarTrigger className='text-gray-200' />
                   {children}
             </main>
         </section>
